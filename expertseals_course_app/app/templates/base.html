@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ExpertSeals - Course Management{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">ExpertSeals</div>
+            <ul>
+                <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('main.new_course') }}" class="btn btn-success">Add Course</a></li>
+                    <li>
+                        <div class="user-info">
+                            Hello, <strong>{{ current_user.username }}</strong> 
+                            {% if current_user.is_admin %}<span style="color: #f39c12;">[Admin]</span>{% endif %}
+                        </div>
+                    </li>
+                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Register</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(category_filter=['success']) %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% with messages = get_flashed_messages(category_filter=['error']) %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2026 ExpertSeals Organization. All rights reserved. | 
+            <a href="/api/health">API Health</a>
+        </p>
+    </footer>
+</body>
+</html>
