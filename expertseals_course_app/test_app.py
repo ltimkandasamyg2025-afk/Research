@@ -1,4 +1,5 @@
 import pytest
+import re
 from app import create_app, _db
 from app.models import User, Course, Enrollment
 
@@ -75,6 +76,38 @@ def test_logout(client, auth):
     response = client.get('/')
     assert b'Login' in response.data
     assert b'Hello, testuser' not in response.data
+
+def test_reset_password_flow(client, auth):
+    auth.register('testuser', 'oldpass123')
+
+    response = client.post(
+        '/auth/forgot-password',
+        data={'username': 'testuser'},
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'/auth/reset-password/' in response.data
+
+    html = response.data.decode()
+    match = re.search(r'/auth/reset-password/([A-Za-z0-9._-]+)', html)
+    assert match is not None
+    token = match.group(1)
+
+    response = client.post(
+        f'/auth/reset-password/{token}',
+        data={'password': 'newpass123', 'confirm_password': 'newpass123'},
+        follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'Password has been reset successfully' in response.data
+
+    login_response = auth.login('testuser', 'newpass123')
+    assert login_response.status_code == 302
+
+def test_reset_password_invalid_token(client):
+    response = client.get('/auth/reset-password/invalid-token', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Invalid or expired password reset link' in response.data
 
 def test_index(client):
     response = client.get('/')

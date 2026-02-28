@@ -1,7 +1,10 @@
 from . import _db
+from flask_login import UserMixin
+from flask import current_app
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 
-class User(_db.Model):
+class User(UserMixin, _db.Model):
     id = _db.Column(_db.Integer, primary_key=True)
     username = _db.Column(_db.String(100), unique=True, nullable=False)
     password_hash = _db.Column(_db.String(255), nullable=False)
@@ -12,6 +15,20 @@ class User(_db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def generate_reset_token(self):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return serializer.dumps({'user_id': self.id}, salt='password-reset-salt')
+
+    @staticmethod
+    def verify_reset_token(token, max_age=1800):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = serializer.loads(token, salt='password-reset-salt', max_age=max_age)
+        except (BadSignature, SignatureExpired):
+            return None
+
+        return User.query.get(data.get('user_id'))
 
 class Course(_db.Model):
     id = _db.Column(_db.Integer, primary_key=True)

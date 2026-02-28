@@ -41,6 +41,45 @@ def register():
     
     return render_template('auth/register.html')
 
+@bp.route('/forgot-password', methods=('GET', 'POST'))
+def forgot_password():
+    if request.method == 'POST':
+        username = request.form['username']
+        user = User.query.filter_by(username=username).first()
+
+        if user:
+            token = user.generate_reset_token()
+            reset_link = url_for('auth.reset_password', token=token)
+            flash(f'Use this link to reset your password: {reset_link}', 'success')
+        else:
+            flash('If an account exists, a password reset link has been generated.', 'success')
+
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/forgot_password.html')
+
+@bp.route('/reset-password/<token>', methods=('GET', 'POST'))
+def reset_password(token):
+    user = User.verify_reset_token(token)
+    if not user:
+        flash('Invalid or expired password reset link', 'error')
+        return redirect(url_for('auth.forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        if password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return render_template('auth/reset_password.html', token=token)
+
+        user.set_password(password)
+        _db.session.commit()
+        flash('Password has been reset successfully. Please log in.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/reset_password.html', token=token)
+
 @bp.route('/logout')
 @login_required
 def logout():

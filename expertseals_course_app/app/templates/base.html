@@ -16,7 +16,7 @@
                     <li><a href="{{ url_for('main.new_course') }}" class="btn btn-success">Add Course</a></li>
                     <li>
                         <div class="user-info">
-                            Hello, <strong>{{ current_user.username }}</strong> 
+                            Hello, {{ current_user.username }} 
                             {% if current_user.is_admin %}<span style="color: #f39c12;">[Admin]</span>{% endif %}
                         </div>
                     </li>
